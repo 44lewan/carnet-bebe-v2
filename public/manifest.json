@@ -1,0 +1,9 @@
+{
+  "name": "Petit Carnet",
+  "short_name": "Petit Carnet",
+  "description": "Le carnet de suivi de bébé, partagé entre parents",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#FBF7F1",
+  "theme_color": "#7C9473"
+}
