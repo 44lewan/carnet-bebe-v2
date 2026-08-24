@@ -3,13 +3,15 @@
 import React, { useState, useEffect, useMemo, useCallback, useRef } from "react";
 import {
   Home, ListTree, TrendingUp, CalendarDays, Plus, X, Milk, Baby,
-  Droplet, Moon, Thermometer, Check, Trash2, Sparkles,
+  Droplet, Moon, Thermometer, Check, Trash2, Sparkles, AlertTriangle,
+  ExternalLink, RefreshCw,
 } from "lucide-react";
 import {
   LineChart, Line, BarChart, Bar, XAxis, YAxis, CartesianGrid,
   Tooltip, ResponsiveContainer,
 } from "recharts";
 import { supabase } from "../lib/supabase";
+import { fetchRappelsBebe } from "../lib/rappels";
 
 const INK = "#332D3E";
 const PAPER = "#FBF7F1";
@@ -137,6 +139,7 @@ export default function Page() {
         {tab === "rdv" && (
           <RendezVous data={data} onAdd={() => setModal({ type: "appointment" })} onToggle={toggleAppointment} onRemove={removeAppointment} />
         )}
+        {tab === "rappels" && <Rappels />}
       </main>
 
       <QuickAddBar onPick={(type) => setModal({ type })} />
@@ -509,6 +512,79 @@ function ApptRow({ a, onToggle, onRemove, muted }) {
   );
 }
 
+function Rappels() {
+  const [rappels, setRappels] = useState([]);
+  const [status, setStatus] = useState("loading");
+
+  const load = async () => {
+    setStatus("loading");
+    try {
+      const data = await fetchRappelsBebe();
+      setRappels(data);
+      setStatus("ready");
+    } catch {
+      setStatus("error");
+    }
+  };
+
+  useEffect(() => {
+    load();
+  }, []);
+
+  return (
+    <div style={styles.stack}>
+      <div style={{ ...styles.card, background: "#F4DEDB", display: "flex", gap: 10, alignItems: "center" }}>
+        <AlertTriangle size={18} color="#C1554B" />
+        <div style={{ fontSize: 12, color: INK }}>
+          Rappels officiels liés aux produits bébé, fournis par le gouvernement (RappelConso).
+        </div>
+      </div>
+
+      <button onClick={load} style={{ ...styles.smallBtn, alignSelf: "flex-start" }}>
+        <RefreshCw size={13} /> Actualiser
+      </button>
+
+      {status === "loading" && <EmptyState text="Recherche des rappels en cours…" />}
+      {status === "error" && <EmptyState text="Impossible de récupérer les rappels pour le moment." />}
+      {status === "ready" && rappels.length === 0 && (
+        <EmptyState text="Aucun rappel récent trouvé pour les produits bébé." />
+      )}
+
+      {status === "ready" &&
+        rappels.map((r, i) => (
+          <div key={r.reference_fiche || i} style={styles.card}>
+            <div style={{ fontSize: 13, fontWeight: 600, color: INK }}>
+              {r.noms_des_modeles_ou_references || r.marque_produit || "Produit rappelé"}
+            </div>
+            <div style={{ fontSize: 11, color: "#8A8390", marginTop: 2 }}>
+              {[r.categorie_de_produit, r.sous_categorie_de_produit].filter(Boolean).join(" · ")}
+            </div>
+            {r.motif_rappel && (
+              <div style={{ fontSize: 12, color: INK, marginTop: 8 }}>
+                <strong>Motif : </strong>{r.motif_rappel}
+              </div>
+            )}
+            {r.date_publication && (
+              <div style={{ fontSize: 11, color: "#B0A9B5", marginTop: 6 }}>
+                Publié le {fmtDay(r.date_publication)}
+              </div>
+            )}
+            {r.lien_vers_la_fiche_rappel && (
+              <a
+                href={r.lien_vers_la_fiche_rappel}
+                target="_blank"
+                rel="noreferrer"
+                style={{ display: "inline-flex", alignItems: "center", gap: 4, fontSize: 12, color: SAGE, fontWeight: 600, marginTop: 10, textDecoration: "none" }}
+              >
+                Voir la fiche complète <ExternalLink size={12} />
+              </a>
+            )}
+          </div>
+        ))}
+    </div>
+  );
+}
+
 function QuickAddBar({ onPick }) {
   const items = [
     { type: "biberon", ...TYPE_META.biberon },
@@ -538,6 +614,7 @@ function BottomNav({ tab, setTab }) {
     { id: "journal", label: "Journal", icon: ListTree },
     { id: "courbes", label: "Courbes", icon: TrendingUp },
     { id: "rdv", label: "RDV", icon: CalendarDays },
+    { id: "rappels", label: "Rappels", icon: AlertTriangle },
   ];
   return (
     <nav style={styles.bottomNav}>
@@ -682,5 +759,6 @@ const styles = {
   overlay: { position: "fixed", inset: 0, background: "rgba(51,45,62,0.4)", display: "flex", alignItems: "flex-end", justifyContent: "center", zIndex: 50 },
   sheet: { background: PAPER, width: "100%", maxWidth: 480, borderRadius: "20px 20px 0 0", padding: "20px 18px calc(20px + env(safe-area-inset-bottom))", maxHeight: "85vh", overflowY: "auto" },
 };
+
 
           
